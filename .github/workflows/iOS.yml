@@ -25,10 +25,14 @@ jobs:
           echo "JDK_DEBUG_LEVEL=release" >> $GITHUB_ENV
           echo "JVM_VARIANTS=server" >> $GITHUB_ENV
 
-      - name: Make scripts executable and run build pipeline
+      - name: Grant execution permissions
         run: |
           chmod +x *.sh
+          find . -name "android-wrapped-clang" -exec chmod +x {} +
+          [ -f android-wrapped-clang ] && chmod +x android-wrapped-clang
 
+      - name: Run build pipeline
+        run: |
           # Get boot JDK (JDK 24 needed for building JDK 25)
           ./get_boot_jdk.sh
 
