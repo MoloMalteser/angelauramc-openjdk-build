@@ -1,0 +1,56 @@
+name: Build OpenJDK 25 for iOS
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  build-ios-openjdk:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          brew install autoconf make zip unzip
+
+      - name: Set environment variables
+        run: |
+          echo "BUILD_IOS=1" >> $GITHUB_ENV
+          echo "BUILD_FREETYPE_VERSION=2.10.0" >> $GITHUB_ENV
+          echo "JDK_DEBUG_LEVEL=release" >> $GITHUB_ENV
+          echo "JVM_VARIANTS=server" >> $GITHUB_ENV
+
+      - name: Make scripts executable and run build pipeline
+        run: |
+          chmod +x *.sh
+
+          # Get boot JDK (JDK 24 needed for building JDK 25)
+          ./get_boot_jdk.sh
+
+          # Get CUPS, Freetype and build Freetype
+          ./get_libs.sh
+          ./build_libs.sh
+
+          # Clone JDK source
+          ./clone_jdk.sh
+
+          # Configure and build JDK
+          ./build_jdk.sh
+
+          # Pack the built JDK
+          ./remove_jdk_debug_info.sh
+          ./tar_jdk.sh
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openjdk-25-ios-aarch64
+          path: |
+            *.tar.gz
+            *.tgz
+          if-no-files-found: warn
